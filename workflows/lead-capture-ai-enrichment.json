@@ -1,0 +1,626 @@
+{
+  "name": "Lead Capture & AI Enrichment",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-capture",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -48,
+        0
+      ],
+      "id": "800d120e-38f2-4b44-a7a9-22ea6076352f",
+      "name": "Webhook",
+      "webhookId": "85305219-ac09-4598-9962-063a2686088f"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Foglio1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ $json.body.message }}",
+            "name": "={{ $json.body.name }}",
+            "email": "={{ $json.body.email }}",
+            "company": "={{ $json.body.company }}"
+          },
+          "matchingColumns": [
+            "message"
+          ],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        432,
+        0
+      ],
+      "id": "a0ceae45-6cab-4467-a9a4-f93f1ec57ee2",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential_id",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b57d8985-a72d-4417-8781-198101d8e5f7",
+              "name": "lead_name",
+              "value": "={{ $('Webhook').item.json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "99d86038-9518-429b-899c-3c0e9a045742",
+              "name": "lead_email",
+              "value": "={{ $('Webhook').item.json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "0d8ac311-5caa-4127-aec9-64ed05fa2903",
+              "name": "lead_company",
+              "value": "={{ $('Webhook').item.json.body.company }}",
+              "type": "string"
+            },
+            {
+              "id": "b55868e5-db20-4ea4-a46a-bb1b71e3e940",
+              "name": "lead_message",
+              "value": "={{ $('Webhook').item.json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "c32da37a-7291-4d95-88f0-b9fb03814f18",
+              "name": "classificazione",
+              "value": "={{ JSON.parse($json.message.content).classificazione }}",
+              "type": "string"
+            },
+            {
+              "id": "533c5dee-df7e-4f70-a570-3a86098a6459",
+              "name": "motivazione",
+              "value": "={{ JSON.parse($json.message.content).motivazione }}",
+              "type": "string"
+            },
+            {
+              "id": "5011fbf6-6260-4e41-a097-a6f9f6423c04",
+              "name": "risposta_suggerita",
+              "value": "={{ JSON.parse($json.message.content).risposta_suggerita }}",
+              "type": "string"
+            },
+            {
+              "id": "d31197bc-6139-4103-a94b-b7d5da73047a",
+              "name": "valore_stimato",
+              "value": "={{ JSON.parse($json.message.content).valore_stimato }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        0
+      ],
+      "id": "db23ad46-11df-457a-8456-5b9e0c267a09",
+      "name": "Parse AI Response"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"qwen3.5:9b\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Sei un esperto di vendite B2B. Analizza il messaggio di un potenziale cliente e rispondi SOLO con un JSON valido, senza markdown, senza testo aggiuntivo. Il JSON deve avere questa struttura esatta: {\\\"classificazione\\\": \\\"hot|warm|cold\\\", \\\"motivazione\\\": \\\"breve spiegazione in 1 riga\\\", \\\"risposta_suggerita\\\": \\\"testo email di risposta professionale in italiano, 3-4 righe\\\", \\\"valore_stimato\\\": \\\"alto|medio|basso\\\"}\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Nome: {{ $json.name }}\\nAzienda: {{ $json.company }}\\nEmail: {{ $json.email }}\\nMessaggio: {{ $json.message }}\"\n    }\n  ],\n  \"stream\": false,\n  \"format\": \"json\"\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        656,
+        0
+      ],
+      "id": "cd2c6389-ba43-41c1-bc19-87c39671d52c",
+      "name": "HTTP Request (Ollama)"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "=🔔 NUOVO LEAD\n\n👤 {{ $('Parse AI Response').item.json.lead_name }}\n🏢 {{ $('Parse AI Response').item.json.lead_company }}\n📧 {{ $('Parse AI Response').item.json.lead_email }}\n\n📊 Classificazione: {{ $json.classificazione.toUpperCase() }}\n💰 Valore: {{ $('Parse AI Response').item.json.valore_stimato }}\n\n💬 Messaggio:\n{{ $('Parse AI Response').item.json.lead_message }}\n\n🤖 Motivazione AI:\n{{ $json.motivazione }}\n\n✉️ Risposta suggerita:\n{{ $json.risposta_suggerita }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1328,
+        0
+      ],
+      "id": "abb144f7-1574-461c-a669-fe94ac15a040",
+      "name": "Send a text message",
+      "webhookId": "d2947401-4e48-4dca-96bd-f4d0ce3b1a39",
+      "credentials": {
+        "telegramApi": {
+          "id": "QS4zLzKT2IpjR2AE",
+          "name": "bettoClaw"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d156fb28-0a54-4eaf-931f-cbccadfd5969",
+              "leftValue": "={{ $('Parse AI Response').item.json.classificazione }}",
+              "rightValue": "hot",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1552,
+        0
+      ],
+      "id": "5a72bc50-80fd-46c1-bc7b-e5b5799a0304",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1776,
+        96
+      ],
+      "id": "333ae107-7c62-49cc-819e-f81424e5b0eb",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "=⚡ LEAD HOT — Conferma invio email\n\n📧 Destinatario: {{ $('Parse AI Response').item.json.lead_email }}\n👤 {{ $('Parse AI Response').item.json.lead_name }} ({{ $('Parse AI Response').item.json.lead_company }})\n\n✉️ Risposta proposta dall'AI:\n{{ $('Parse AI Response').item.json.risposta_suggerita }}\n\nVuoi inviare questa email?",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✅ Invia email",
+                    "additionalFields": {
+                      "callback_data": "=send_email_{{ $('Parse AI Response').item.json.lead_email }}"
+                    }
+                  },
+                  {
+                    "text": "❌ Non inviare",
+                    "additionalFields": {
+                      "callback_data": "skip_email"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1776,
+        -96
+      ],
+      "id": "6f382038-6860-47a4-9fa2-080e0d14bbdd",
+      "name": "Send a text message1",
+      "webhookId": "5e5c09c6-8385-4550-81f3-2aec07f63496",
+      "credentials": {
+        "telegramApi": {
+          "id": "QS4zLzKT2IpjR2AE",
+          "name": "bettoClaw"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Foglio1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ $json.lead_message }}",
+            "classificazione": "={{ $json.classificazione }}",
+            "motivazione": "={{ $json.motivazione }}",
+            "risposta_suggerita": "={{ $json.risposta_suggerita }}",
+            "company": "={{ $json.lead_company }}",
+            "email": "={{ $json.lead_email }}",
+            "name": "={{ $json.lead_name }}"
+          },
+          "matchingColumns": [
+            "message"
+          ],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "classificazione",
+              "displayName": "classificazione",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "motivazione",
+              "displayName": "motivazione",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "risposta_suggerita",
+              "displayName": "risposta_suggerita",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1104,
+        0
+      ],
+      "id": "ae38e822-b8bc-420f-a88e-de09c1201f80",
+      "name": "Append or update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L9mSuSfCBZNIEQ42",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        320
+      ],
+      "id": "c556972b-c13f-4dab-ad2c-df71ad3b59bd",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "=🚨 ERRORE nel workflow \"Lead Capture\" \n\nNodo: {{ $json.execution.lastNodeExecuted }}\nErrore: {{ $json.execution.error.message }} \nTimestamp: {{ $now.format('dd-MM-yyyy_HH-mm-ss') }}\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        208,
+        320
+      ],
+      "id": "2c87beaf-8ef8-48fe-9a33-c37a697ae3e3",
+      "name": "Send Error Trigger",
+      "webhookId": "f96d18ba-1fae-4b60-beca-95c1fbf83fb3",
+      "credentials": {
+        "telegramApi": {
+          "id": "QS4zLzKT2IpjR2AE",
+          "name": "bettoClaw"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e73a5df9-535a-4ebd-9ef9-c4f23116d603",
+              "leftValue": "={{ $json.body.email }}",
+              "rightValue": "@",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "7e69cd31-65fa-430f-a58a-a10df3dc7385",
+              "leftValue": "={{ $json.body.name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        160,
+        0
+      ],
+      "id": "cd63a0c2-95d7-4347-b882-00c23d95d88a",
+      "name": "If1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request (Ollama)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request (Ollama)": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send Error Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "f33b9ea3-4184-490c-a639-dfff611392c2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f5a8d476f47ef1adf5e81eacb8cc9a84c57d89d18361b16c21198a77a3e43a39"
+  },
+  "id": "VlAdGFAvX4vWWYPi",
+  "tags": []
+}
